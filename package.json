@@ -1,0 +1,29 @@
+{
+  "name": "Zinc.js",
+  "version": "0.0.1",
+  "description": "Control-flow library for asynchronous JavaScript",
+  "main": "zinc.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha -r test/_assets/mocha.globals test/test.*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/informaat-ipe/zinc.git"
+  },
+  "keywords": [
+    "javascript",
+    "asynchronous",
+    "control-flow"
+  ],
+  "author": "Maks Nemisj",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "gitHead": "c5a9d8eb088ab6a2f0bd18a03d836505dcbb6953",
+  "dependencies": {
+    "chai": "~1.7.2",
+    "mocha": "~1.12.0"
+  }
+}

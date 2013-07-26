@@ -1,0 +1,18 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mocha Tests</title>
+  <link rel="stylesheet" href="_assets/mocha.css" />
+</head>
+<body>
+  <div id="mocha"></div>
+  <script src="../lib/zinc.js"></script>
+  <script src="_assets/chai.js"></script>
+  <script src="_assets/mocha.js"></script>
+  <script>mocha.setup('bdd')</script>
+  <script src="test.zinc.js"></script>
+  <script>
+    mocha.run();
+  </script>
+</body>
+</html>
