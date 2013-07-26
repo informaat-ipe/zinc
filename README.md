@@ -4,7 +4,7 @@ Asynchronous control-flow library for JavaScript. Works for both browser and
 node.js
 
 The main difference between other asynchronous control-flow libraries in the way zinc.js
-handles the execution of the callbacks. 
+handles the execution of the callbacks, which helps to prevent "maximum stack size exedded" error in applications which heavily use callback pattern.
 
 The usage is simple. Add couple of functions to the zinc-stack. If needed, define context for them to execute and after that call `run` with the
 final-callback as first argument.
@@ -28,17 +28,16 @@ case any of the functions was broken and results.
 
 ## Documentation
 
-All methods of the zinc are chainable, expect `run`:
+All methods of the zinc are chainable, except  `run`:
 
 ```javascript
-  var stack = zinc
-    .create()
-    .context()
-    .add(function (h) {
-      return h();
-    })
-    .run();
-
+var stack = zinc
+  .create()
+  .context()
+  .add(function (h) {
+    return h();
+  })
+  .run();
 ```
 
 ### Add
@@ -49,43 +48,43 @@ but all of them use public method `add`.
 First of all you can pass function directly to the zinc-stack.
 
 ```javascript
-  var stack = zinc.create();
-  stack.push(function (h) {
-    return h();
-  });
+var stack = zinc.create();
+stack.push(function (h) {
+  return h();
+});
 
-  stack.run();
+stack.run();
 ```
 
 It's also possible to pass an array of functions.
 
 ```javascript
-  var stack = zinc.create();
+var stack = zinc.create();
 
-  stack.add([
+stack.add([
 
-    function (h) {
-      return h();
-    },
+  function (h) {
+    return h();
+  },
 
-    function (h) {
-      return h();
-    }
-  ]);
+  function (h) {
+    return h();
+  }
+]);
 
-  stack.run();
+stack.run();
 ```
 
 Or even pass the object and method name to it
 
 ```javascript
-  var stack = zinc.create();
+var stack = zinc.create();
 
-  stack.add(this, 'methodOne');
-  stack.add(this, 'methodTwo');
-  stack.add(this, 'methodThree');
+stack.add(this, 'methodOne');
+stack.add(this, 'methodTwo');
+stack.add(this, 'methodThree');
 
-  stack.run();
+stack.run();
 ```
 
 ### Context
@@ -114,25 +113,25 @@ It's possible to nest zinc stacks one in another in order to create more
 complex control-flows:
 
 ```javascript
-  var child = zinc.create();
+var child = zinc.create();
 
-  child.add(function (h) { 
-    return h()
-  });
+child.add(function (h) { 
+  return h()
+});
 
-  var parent = zinc.create();
+var parent = zinc.create();
 
-  stack.add(function (h){
-    return h();
-  });
+stack.add(function (h){
+  return h();
+});
 
-  parent.add(child);
+parent.add(child);
 
-  stack.add(function (h){
-    return h();
-  });
+stack.add(function (h){
+  return h();
+});
 
-  parent.run();
+parent.run();
 ```
 
 
