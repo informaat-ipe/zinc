@@ -87,26 +87,6 @@ stack.add(this, 'methodThree');
 stack.run();
 ```
 
-### Context
-
-It's possible to configure stack to use the same exaction context for all the handlers in
-the stack, without need of using `bind`.
-
-```javascript
-Some.protoype.doit = function () {
-
-  var stack = zinc.create();
-  stack.context(obj);
-
-  stack.add(function (h) {
-    // this will refer to the obj
-  });
-
-  stack.run();
-};
-```
-
-
 ### Nesting
 
 It's possible to nest zinc stacks one in another in order to create more
@@ -133,6 +113,112 @@ stack.add(function (h){
 
 parent.run();
 ```
+
+
+### Waterfall
+
+Zinc stack can run in a waterfall mode. It's similar to the series, expect that
+arguments which are passed to the handler are given to the next function on the
+stack. Arguments of the last handler are passed to the final callback.
+
+Waterfall can be activated by calling waterfall method on the stack.
+
+
+```javascript
+var stack = zinc.create();
+
+stack.waterfall();
+
+stack.add(function (h) {
+  return h(null, 'one', 'two', 'three');
+});
+
+stack.add(function (firstArgument, secondArgument, thirdArgument, h) {
+  // firstArgument -> 'one'
+  // secondArgument -> 'two'
+  // thirdArgument -> 'three'
+  return h(null, 'one-one');
+});
+
+stack.run(function (err, result) {
+  // result is 'one-one'
+});
+```
+
+In case the last handler passes multiple arguments to the final-callback, then
+result variable will be array, instead of the one argument object.
+
+```javascript
+var stack = zinc
+  .create()
+  .waterfall();
+
+stack.add(function (h) {
+  return h(null, 'one-one', 'two-two');
+});
+
+stack.run(function (err, result) {
+  // result is ['one-one', 'two-two' ]
+});
+```
+
+#### Nesting
+
+When nesting waterfall in series stack, the last result of the waterfall stack will be also available in the final-callback
+
+```javascript
+var child = zinc
+  .create()
+  .waterfall();
+
+child.add(function (h) {
+  return h(null, 'child-one');
+});
+
+child.add(function (argOne, h) {
+  // argOne -> 'child-one'
+  return h(null, 'child-two', 'child-three');
+});
+
+var stack = zinc.create();
+
+stack.add(function (h) {
+  return h(null, 'one');
+});
+
+stack.add(child);
+
+stack.add(function (h) {
+  return h(null, 'three');
+});
+
+stack.run(function (err, result) {
+  // result is [
+  // 'one',
+  // ['child-two', 'child-three' ],
+  // 'three'
+});
+```
+
+### Context
+
+It's possible to configure stack to use the same exaction context for all the handlers in
+the stack, without need of using `bind` or caching this variable:
+
+```javascript
+Some.protoype.doit = function () {
+
+  var stack = zinc.create();
+  stack.context(obj);
+
+  stack.add(function (h) {
+    // this will refer to the obj
+  });
+
+  stack.run();
+};
+```
+
 
 
 

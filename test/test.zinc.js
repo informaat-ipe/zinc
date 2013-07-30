@@ -243,6 +243,182 @@ describe('Test Async Zinc', function () {
 			});
 		});
 
+		describe('waterfall', function () {
+
+			it('should pass multiple arguments to the final-callback', function (done) {
+				var stack = zinc
+					.create()
+					.waterfall();
+
+				var results = [];
+				
+				stack.push(function (h) {
+					setTimeout(function () {
+						return h(null, 'one-one', 'one-two');
+					}, 0);
+				});
+
+				stack.push(function (argOne, argTwo, h) {
+					results.push([ argOne, argTwo ]);
+					setTimeout(function () {
+						return h(null, 'two-one', 'two-two');
+					}, 0);
+				});
+
+				stack.run(function (err, result) {
+					// result is now ['two-one', 'two-two']
+					results.push(result);
+
+					expect(err).to.be.not.ok;
+					
+					expect(results).to.deep.equal([
+						['one-one', 'one-two'],
+						['two-one', 'two-two']
+					]);
+
+					return done();
+				});
+			});
+
+			it('should pass one argument to the final-callback', function (done) {
+				var stack = zinc
+					.create()
+					.waterfall();
+
+				stack.push(function (h) {
+					setTimeout(function () {
+						return h();
+					}, 0);
+				});
+
+				stack.push(function (h) {
+					setTimeout(function () {
+						return h(null, 'two-one');
+					}, 0);
+				});
+
+				stack.run(function (err, result) {
+					// result is now 'two-one'
+					
+					expect(err).to.be.not.ok;
+					expect(result).to.be.deep.equal('two-one');
+
+					return done();
+				});
+			});
+
+			it('should be chained into another stack as waterfall and have one argument', function (done) {
+				var parent = zinc.create();
+
+				var child = zinc
+					.create()
+					.waterfall();
+
+				child.add(function (h) {
+					setTimeout(function () {
+						return h(null, 'child');
+					}, 0);
+				});
+
+				parent.add(function (h) {
+					setTimeout(function () {
+						return h(null, 'one-one');
+					}, 0);
+				});
+
+				parent.add(child);
+
+				parent.add(function (h) {
+					setTimeout(function () {
+						return h(null, 'two-one');
+					}, 0);
+				});
+
+
+				parent.run(function (err, result) {
+					// result is now [ 'child', 'two-one' ]
+					
+					expect(err).to.be.not.ok;
+					expect(result).to.be.deep.equal(['one-one', 'child', 'two-one']);
+
+					return done();
+				});
+			});
+
+			it('should be chained into another stack as waterfall and have multiple arguments', function (done) {
+				var parent = zinc.create();
+
+				var child = zinc
+					.create()
+					.waterfall();
+
+				child.add(function (h) {
+					setTimeout(function () {
+						return h(null, 'child-one', 'child-two');
+					}, 0);
+				});
+
+				parent.add(child);
+
+				parent.add(function (h) {
+					setTimeout(function () {
+						return h(null, 'two-one');
+					}, 0);
+				});
+
+				parent.run(function (err, result) {
+					// result is now [ ['child-one', 'child-two'], 'two-one' ]
+					
+					expect(err).to.be.not.ok;
+					expect(result).to.be.deep.equal([['child-one', 'child-two'], 'two-one']);
+
+					return done();
+				});
+			});
+
+			it('should be chained into another waterfall stack as waterfall and have multiple arguments', function (done) {
+				var parent = zinc
+					.create()
+					.waterfall();
+
+				var child = zinc
+					.create()
+					.waterfall();
+
+				var results = [];
+
+				parent.add(function (h) {
+					setTimeout(function () {
+						// this won't pass it to the child, since child has no
+						// input
+						return h(null, 'zork');
+					});
+				});
+
+				child.add(function (h) {
+					setTimeout(function () {
+						return h(null, 'child-one', 'child-two');
+					}, 0);
+				});
+
+				parent.add(child);
+
+				parent.add(function (childOne, childTwo, h) {
+					setTimeout(function () {
+						return h(null, 'two-one');
+					}, 0);
+				});
+
+				parent.run(function (err, result) {
+					// result is now [ ['child-one', 'child-two'], 'two-one' ]
+					
+					expect(err).to.be.not.ok;
+
+					return done();
+				});
+			});
+		});
+
 		it('should collect results with one argument', function (done) {
 
 			var stack = zinc.create();
@@ -340,6 +516,121 @@ describe('Test Async Zinc', function () {
 	});
 
 	describe('synchronous', function () {
+		describe('waterfall', function () {
+
+			it('should pass multiple arguments to the final-callback', function (done) {
+				var stack = zinc
+					.create()
+					.waterfall();
+
+				var results = [];
+				
+				stack.push(function (h) {
+					return h(null, 'one-one', 'one-two');
+				});
+
+				stack.push(function (argOne, argTwo, h) {
+					results.push([ argOne, argTwo ]);
+					return h(null, 'two-one', 'two-two');
+				});
+
+				stack.run(function (err, result) {
+					// result is now ['two-one', 'two-two']
+					results.push(result);
+
+					expect(err).to.be.not.ok;
+					
+					expect(results).to.deep.equal([
+						['one-one', 'one-two'],
+						['two-one', 'two-two']
+					]);
+
+					return done();
+				});
+			});
+
+			it('should pass one argument to the final-callback', function (done) {
+				var stack = zinc
+					.create()
+					.waterfall();
+
+				stack.push(function (h) {
+					return h();
+				});
+
+				stack.push(function (h) {
+					return h(null, 'two-one');
+				});
+
+				stack.run(function (err, result) {
+					// result is now 'two-one'
+					
+					expect(err).to.be.not.ok;
+					expect(result).to.be.deep.equal('two-one');
+
+					return done();
+				});
+			});
+
+			it('should be chained into another stack as waterfall and have one argument', function (done) {
+				var parent = zinc.create();
+
+				var child = zinc
+					.create()
+					.waterfall();
+
+				child.add(function (h) {
+					return h(null, 'child');
+				});
+
+				parent.add(function (h) {
+					return h(null, 'one-one');
+				});
+
+				parent.add(child);
+
+				parent.add(function (h) {
+					return h(null, 'two-one');
+				});
+
+
+				parent.run(function (err, result) {
+					// result is now [ 'child', 'two-one' ]
+					
+					expect(err).to.be.not.ok;
+					expect(result).to.be.deep.equal(['one-one', 'child', 'two-one']);
+
+					return done();
+				});
+			});
+
+			it('should be chained into another stack as waterfall and have multiple arguments', function (done) {
+				var parent = zinc.create();
+
+				var child = zinc
+					.create()
+					.waterfall();
+
+				child.add(function (h) {
+					return h(null, 'child-one', 'child-two');
+				});
+
+				parent.add(child);
+
+				parent.add(function (h) {
+					return h(null, 'two-one');
+				});
+
+				parent.run(function (err, result) {
+					// result is now [ ['child-one', 'child-two'], 'two-one' ]
+					
+					expect(err).to.be.not.ok;
+					expect(result).to.be.deep.equal([['child-one', 'child-two'], 'two-one']);
+
+					return done();
+				});
+			});
+		});
 		
 		it('should not show error with maximum stack size when doing synced', function (done) {
 			var stack = zinc.create();
