@@ -7,6 +7,32 @@ var expect = chai.expect;
 describe('Test Async Zinc', function () {
 	
 	describe('global', function () {
+		it('should pass array as one in waterfall', function (done) {
+
+			var stack = zinc.create().waterfall();
+
+			var result = null;
+
+			stack.add(function (next) {
+				return next(null, [{
+					'name': 'zinc'
+				}]);
+			});
+
+			stack.add(function (arg, next) {
+				result = arg;
+				return next();
+			});
+
+			stack.run(function (err) {
+
+				expect(result).to.deep.equal([{
+					name: 'zinc'
+				}]);
+
+				return done();
+			});
+		});
 
 		it('should run without callback', function (done) {
 			var stack = zinc.create();
@@ -18,8 +44,26 @@ describe('Test Async Zinc', function () {
 			stack.run();
 		});
 
+		it('should pass array as one argument', function (done) {
+			var stack = zinc.create();
 
-		
+			stack.add(function (next) {
+				return next(null, [{
+					'name': 'zinc'
+				}]);
+			});
+
+			stack.run(function (err, result) {
+
+				expect(result).to.deep.equal([[{
+					name: 'zinc'
+				}]]);
+
+				return done();
+			});
+		});
+
+
 		it('should add object and method name', function (done) {
 
 			var stack = zinc.create();
@@ -43,7 +87,7 @@ describe('Test Async Zinc', function () {
 
 		});
 
-		it('should', function (done) {
+		it('should run without functions', function (done) {
 			var stack = zinc.create();
 
 			stack.run(function () {
@@ -403,7 +447,7 @@ describe('Test Async Zinc', function () {
 
 				parent.add(child);
 
-				parent.add(function (childOne, childTwo, h) {
+				parent.add(function (childResult, h) {
 					setTimeout(function () {
 						return h(null, 'two-one');
 					}, 0);
