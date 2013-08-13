@@ -6,23 +6,23 @@ node.js
 The main difference between other asynchronous control-flow libraries in the way zinc.js
 handles the execution of the callbacks, which helps to prevent "maximum stack size exedded" error in applications which heavily use callback pattern.
 
-The usage is simple. Add couple of functions to the zinc-stack. If needed, define context for them to execute and after that call `run` with the
+The usage is simple. Add couple of functions to the zinc-flow. If needed, define context for them to execute and after that call `run` with the
 final-callback as first argument.
 
 ```javascript
-var stack = zinc.create();
+var flow = zinc.create();
 
-stack.add(function (h) { return h(); });
-stack.add(function (h) { return h(); });
+flow.add(function (next) { return next(); });
+flow.add(function (next) { return next(); });
 
-stack
+flow
   .context(this)
   .run(function (err, results) {
 
   });
 ```
 
-Functions will be executed one after another whenever callback `h` is executed.
+Functions will be executed one after another whenever callback `next` is executed.
 When all the functions are executed, thi final-callback will receive error, in
 case any of the functions was broken and results.
 
@@ -31,84 +31,85 @@ case any of the functions was broken and results.
 All methods of the zinc are chainable, except  `run`:
 
 ```javascript
-var stack = zinc
+var flow = zinc
   .create()
+  .series()
   .context()
-  .add(function (h) {
-    return h();
+  .add(function (next) {
+    return next();
   })
   .run();
 ```
 
 ### Add
 
-There are couple of different possibilities to add functions to the zinc-stack,
+There are couple of different possibilities to add functions to the zinc-flow,
 but all of them use public method `add`.
 
-First of all you can pass function directly to the zinc-stack.
+First of all you can pass function directly to the zinc-flow.
 
 ```javascript
-var stack = zinc.create();
-stack.push(function (h) {
-  return h();
+var flow = zinc.create();
+flow.push(function (next) {
+  return next();
 });
 
-stack.run();
+flow.run();
 ```
 
 It's also possible to pass an array of functions.
 
 ```javascript
-var stack = zinc.create();
+var flow = zinc.create();
 
-stack.add([
+flow.add([
 
-  function (h) {
-    return h();
+  function (next) {
+    return next();
   },
 
-  function (h) {
-    return h();
+  function (next) {
+    return next();
   }
 ]);
 
-stack.run();
+flow.run();
 ```
 
 Or even pass the object and method name to it
 
 ```javascript
-var stack = zinc.create();
+var flow = zinc.create();
 
-stack.add(this, 'methodOne');
-stack.add(this, 'methodTwo');
-stack.add(this, 'methodThree');
+flow.add(this, 'methodOne');
+flow.add(this, 'methodTwo');
+flow.add(this, 'methodThree');
 
-stack.run();
+flow.run();
 ```
 
 ### Nesting
 
-It's possible to nest zinc stacks one in another in order to create more
+It's possible to nest zinc flows one in another in order to create more
 complex control-flows:
 
 ```javascript
 var child = zinc.create();
 
-child.add(function (h) { 
-  return h()
+child.add(function (next) { 
+  return next()
 });
 
 var parent = zinc.create();
 
-stack.add(function (h){
-  return h();
+parent.add(function (next){
+  return next();
 });
 
 parent.add(child);
 
-stack.add(function (h){
-  return h();
+parent.add(function (next){
+  return next();
 });
 
 parent.run();
@@ -117,82 +118,82 @@ parent.run();
 
 ### Waterfall
 
-Zinc stack can run in a waterfall mode. It's similar to the series, expect that
+Zinc flow can run in a waterfall mode. It's similar to the series, except that
 arguments which are passed to the handler are given to the next function on the
-stack. Arguments of the last handler are passed to the final callback.
+flow. Arguments of the last handler are passed to the final callback.
 
-Waterfall can be activated by calling waterfall method on the stack.
+Waterfall can be activated by calling waterfall method on the flow intsance.
 
 
 ```javascript
-var stack = zinc.create();
+var flow = zinc.create();
 
-stack.waterfall();
+flow.waterfall();
 
-stack.add(function (h) {
-  return h(null, 'one', 'two', 'three');
+flow.add(function (next) {
+  return next(null, 'one', 'two', 'three');
 });
 
-stack.add(function (firstArgument, secondArgument, thirdArgument, h) {
+flow.add(function (firstArgument, secondArgument, thirdArgument, next) {
   // firstArgument -> 'one'
   // secondArgument -> 'two'
   // thirdArgument -> 'three'
-  return h(null, 'one-one');
+  return next(null, 'one-one');
 });
 
-stack.run(function (err, result) {
+flow.run(function (err, result) {
   // result is 'one-one'
 });
 ```
 
 In case the last handler passes multiple arguments to the final-callback, then
-result variable will be array, instead of the one argument object.
+result variable will be an array, instead of the one argument object.
 
 ```javascript
-var stack = zinc
+var flow = zinc
   .create()
   .waterfall();
 
-stack.add(function (h) {
-  return h(null, 'one-one', 'two-two');
+flow.add(function (next) {
+  return next(null, 'one-one', 'two-two');
 });
 
-stack.run(function (err, result) {
+flow.run(function (err, result) {
   // result is ['one-one', 'two-two' ]
 });
 ```
 
 #### Nesting
 
-When nesting waterfall in series stack, the last result of the waterfall stack will be also available in the final-callback
+When nesting waterfall in series flow, the last result of the waterfall flow will be also available in the final-callback
 
 ```javascript
 var child = zinc
   .create()
   .waterfall();
 
-child.add(function (h) {
-  return h(null, 'child-one');
+child.add(function (next) {
+  return next(null, 'child-one');
 });
 
-child.add(function (argOne, h) {
+child.add(function (argOne, next) {
   // argOne -> 'child-one'
-  return h(null, 'child-two', 'child-three');
+  return next(null, 'child-two', 'child-three');
 });
 
-var stack = zinc.create();
+var flow = zinc.create();
 
-stack.add(function (h) {
-  return h(null, 'one');
+flow.add(function (next) {
+  return next(null, 'one');
 });
 
-stack.add(child);
+flow.add(child);
 
-stack.add(function (h) {
-  return h(null, 'three');
+flow.add(function (next) {
+  return next(null, 'three');
 });
 
-stack.run(function (err, result) {
+flow.run(function (err, result) {
   // result is [
   // 'one',
   // ['child-two', 'child-three' ],
@@ -200,22 +201,55 @@ stack.run(function (err, result) {
 });
 ```
 
-### Context
+### this Context / Execution scope
 
-It's possible to configure stack to use the same exaction context for all the handlers in
-the stack, without need of using `bind` or caching this variable:
+It's possible to configure zinc-flow to use the same execution context for all the handlers in
+that flow, without need of using `bind` or caching `this` variable.
+
+context method will do the trick.
 
 ```javascript
 Some.protoype.doit = function () {
 
-  var stack = zinc.create();
-  stack.context(obj);
+  var flow = zinc.create();
+  flow.context(this);
 
-  stack.add(function (h) {
-    // this will refer to the obj
+  flow.add(function (next) {
+    // this will refer to the instance of Some object
+    return next();
   });
 
-  stack.run();
+  flow.run();
+};
+```
+
+
+In case context is not set, zinc will create empty isolated context for every
+flow. Which means, that even if you will use `this` in a flow it wont leak to
+the global and can be used as storage of variables. Let's check the example:
+
+
+```javascript
+var runMe = function () {
+
+  var flow = zinc.create();
+
+  flow.add(function (next) {
+
+    // this will refer to isolated scope
+    this.someObject = new SomeObject();
+    
+    return next();
+  });
+
+  flow.add(function (next) {
+    // because this refers to the separate scope, we can use it to store and
+    // retrieve some information inside flow
+
+    this.someObject.someAsyncCall(next);
+  });
+
+  flow.run();
 };
 ```
 

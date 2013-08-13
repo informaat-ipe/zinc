@@ -7,24 +7,24 @@ var expect = chai.expect;
 describe('Test Async Zinc', function () {
 	
 	describe('global', function () {
-		it('should pass array as one in waterfall', function (done) {
+		it('should pass array as one argument in waterfall', function (done) {
 
-			var stack = zinc.create().waterfall();
+			var flow = zinc.create().waterfall();
 
 			var result = null;
 
-			stack.add(function (next) {
+			flow.add(function (next) {
 				return next(null, [{
 					'name': 'zinc'
 				}]);
 			});
 
-			stack.add(function (arg, next) {
+			flow.add(function (arg, next) {
 				result = arg;
 				return next();
 			});
 
-			stack.run(function (err) {
+			flow.run(function (err) {
 
 				expect(result).to.deep.equal([{
 					name: 'zinc'
@@ -35,25 +35,25 @@ describe('Test Async Zinc', function () {
 		});
 
 		it('should run without callback', function (done) {
-			var stack = zinc.create();
+			var flow = zinc.create();
 
-			stack.add(function (h) {
+			flow.add(function (h) {
 				return done();
 			});
 
-			stack.run();
+			flow.run();
 		});
 
 		it('should pass array as one argument', function (done) {
-			var stack = zinc.create();
+			var flow = zinc.create();
 
-			stack.add(function (next) {
+			flow.add(function (next) {
 				return next(null, [{
 					'name': 'zinc'
 				}]);
 			});
 
-			stack.run(function (err, result) {
+			flow.run(function (err, result) {
 
 				expect(result).to.deep.equal([[{
 					name: 'zinc'
@@ -66,7 +66,7 @@ describe('Test Async Zinc', function () {
 
 		it('should add object and method name', function (done) {
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 			var r = [];
 
 			var obj = {
@@ -75,11 +75,11 @@ describe('Test Async Zinc', function () {
 				three: function (h) { r.push('three'); return h(); },
 				doit: function () {
 
-					stack.add(this, 'one');
-					stack.add(this, 'two');
-					stack.add(this, 'three');
+					flow.add(this, 'one');
+					flow.add(this, 'two');
+					flow.add(this, 'three');
 
-					stack.run(done);
+					flow.run(done);
 				}
 			};
 
@@ -88,9 +88,9 @@ describe('Test Async Zinc', function () {
 		});
 
 		it('should run without functions', function (done) {
-			var stack = zinc.create();
+			var flow = zinc.create();
 
-			stack.run(function () {
+			flow.run(function () {
 				return done();
 			});
 
@@ -113,21 +113,21 @@ describe('Test Async Zinc', function () {
 			var r = [];
 
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 
-			stack.add(function (h) {
+			flow.add(function (h) {
 				r.push('parent0');
 				return h(null, 'parent0');
 			});
 
-			stack.add(child);
+			flow.add(child);
 
-			stack.add(function (h) {
+			flow.add(function (h) {
 				r.push('parent1');
 				return h(null, 'parent1');
 			});
 
-			stack.run(function (err, result) {
+			flow.run(function (err, result) {
 				expect(err).to.be.not.ok;
 
 				expect(r).to.be.deep.equal([ 'parent0', 'child0', 'child1', 'parent1' ]);
@@ -139,7 +139,7 @@ describe('Test Async Zinc', function () {
 		});
 
 		it('should use context', function (done) {
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var obj = {};
 
@@ -164,29 +164,75 @@ describe('Test Async Zinc', function () {
 				}
 			];
 
-			stack.context(obj);
+			flow.context(obj);
 
-			stack.add(arr);
+			flow.add(arr);
 			
-			stack.run(function () {
+			flow.run(function () {
 				expect(result).to.deep.equal(expected);
 				return done();
 			});
 		});
 
+		it('should create new empty context for every run', function (done) {
+
+			// getting global
+			var scope = (function () {
+				return this;
+			})();
+
+			var flow = zinc.create();
+
+			var result = [];
+
+			flow.add([
+				function (h) {
+					result.push(this);
+					return h();
+				},
+
+				function (h) {
+					result.push(this);
+					setTimeout(function () {
+						return h();
+					}, 0);
+				},
+
+				function (h) {
+					result.push(this);
+					return h();
+				}
+			]);
+
+			flow.run(function () {
+
+
+				expect(result[0]).to.equal(result[1]);
+				expect(result[1]).to.equal(result[2]);
+
+				expect(result[0] != scope).to.be.ok;
+				// this version gives very weired result in node
+				// expect(result[0]).to.not.equal(scope);
+
+				return done();
+			});
+		});
+
+		it('should give error when adding while running');
+
 		it('should not execute multiple handlers', function (done) {
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var obj = {};
 
-			stack.add(function (h) {
+			flow.add(function (h) {
 				h();
 				setTimeout(function () {
 					return h();
 				}, 0);
 			});
 			
-			stack.run(function () {
+			flow.run(function () {
 				return done();
 			});
 
@@ -194,7 +240,7 @@ describe('Test Async Zinc', function () {
 
 		it('should run in mixed synced and asynced', function (done) {
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var arr = [];
 
@@ -214,41 +260,41 @@ describe('Test Async Zinc', function () {
 				})();
 			}
 
-			stack.add(arr).run(function () {
+			flow.add(arr).run(function () {
 				return done();
 			});
 		});
 
 		it('should run finalCallback in the same scope', function (done) {
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var obj = {};
 
-			stack.add(function (h) {
+			flow.add(function (h) {
 				return h();
 			});
 
-			stack.context(obj);
+			flow.context(obj);
 			
-			stack.run(function () {
+			flow.run(function () {
 				expect(this).to.equal(obj);
 				return done();
 			});
 		});
 
 		it('should run finalCallback in the same scope when error', function (done) {
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var obj = {};
 
-			stack.context(obj);
+			flow.context(obj);
 
-			stack.add(function (h) {
+			flow.add(function (h) {
 				var x = s;
 				return h();
 			});
 			
-			stack.run(function () {
+			flow.run(function () {
 				expect(this).to.equal(obj);
 				return done();
 			});
@@ -259,7 +305,7 @@ describe('Test Async Zinc', function () {
 
 		it('should run asynced code', function (done) {
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var arr = [];
 			var result = [];
@@ -279,7 +325,7 @@ describe('Test Async Zinc', function () {
 				})();
 			}
 
-			stack.add(arr).run(function (err) {
+			flow.add(arr).run(function (err) {
 //
 				expect(err).to.be.not.ok;
 				expect(result).to.deep.equal(expected);	
@@ -290,26 +336,26 @@ describe('Test Async Zinc', function () {
 		describe('waterfall', function () {
 
 			it('should pass multiple arguments to the final-callback', function (done) {
-				var stack = zinc
+				var flow = zinc
 					.create()
 					.waterfall();
 
 				var results = [];
 				
-				stack.push(function (h) {
+				flow.push(function (h) {
 					setTimeout(function () {
 						return h(null, 'one-one', 'one-two');
 					}, 0);
 				});
 
-				stack.push(function (argOne, argTwo, h) {
+				flow.push(function (argOne, argTwo, h) {
 					results.push([ argOne, argTwo ]);
 					setTimeout(function () {
 						return h(null, 'two-one', 'two-two');
 					}, 0);
 				});
 
-				stack.run(function (err, result) {
+				flow.run(function (err, result) {
 					// result is now ['two-one', 'two-two']
 					results.push(result);
 
@@ -325,23 +371,23 @@ describe('Test Async Zinc', function () {
 			});
 
 			it('should pass one argument to the final-callback', function (done) {
-				var stack = zinc
+				var flow = zinc
 					.create()
 					.waterfall();
 
-				stack.push(function (h) {
+				flow.push(function (h) {
 					setTimeout(function () {
 						return h();
 					}, 0);
 				});
 
-				stack.push(function (h) {
+				flow.push(function (h) {
 					setTimeout(function () {
 						return h(null, 'two-one');
 					}, 0);
 				});
 
-				stack.run(function (err, result) {
+				flow.run(function (err, result) {
 					// result is now 'two-one'
 					
 					expect(err).to.be.not.ok;
@@ -351,7 +397,7 @@ describe('Test Async Zinc', function () {
 				});
 			});
 
-			it('should be chained into another stack as waterfall and have one argument', function (done) {
+			it('should be chained into another flow as waterfall and have one argument', function (done) {
 				var parent = zinc.create();
 
 				var child = zinc
@@ -389,7 +435,7 @@ describe('Test Async Zinc', function () {
 				});
 			});
 
-			it('should be chained into another stack as waterfall and have multiple arguments', function (done) {
+			it('should be chained into another flow as waterfall and have multiple arguments', function (done) {
 				var parent = zinc.create();
 
 				var child = zinc
@@ -420,7 +466,7 @@ describe('Test Async Zinc', function () {
 				});
 			});
 
-			it('should be chained into another waterfall stack as waterfall and have multiple arguments', function (done) {
+			it('should be chained into another waterfall flow as waterfall and have multiple arguments', function (done) {
 				var parent = zinc
 					.create()
 					.waterfall();
@@ -465,7 +511,7 @@ describe('Test Async Zinc', function () {
 
 		it('should collect results with one argument', function (done) {
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var arr = [];
 			var expected = [];
@@ -483,7 +529,7 @@ describe('Test Async Zinc', function () {
 				})();
 			}
 
-			stack.add(arr).run(function (err, result) {
+			flow.add(arr).run(function (err, result) {
 //
 				expect(err).to.be.not.ok;
 				expect(result).to.deep.equal(expected);	
@@ -493,7 +539,7 @@ describe('Test Async Zinc', function () {
 
 		it('should collect results with multiple arguments', function (done) {
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var arr = [];
 			var expected = [];
@@ -511,7 +557,7 @@ describe('Test Async Zinc', function () {
 				})();
 			}
 
-			stack.add(arr).run(function (err, result) {
+			flow.add(arr).run(function (err, result) {
 //
 				expect(err).to.be.not.ok;
 				expect(result).to.deep.equal(expected);	
@@ -520,7 +566,7 @@ describe('Test Async Zinc', function () {
 		});
 
 		it('should stop execute when error is passed', function (done){
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var result = [];
 			var error = new Error();
@@ -550,7 +596,7 @@ describe('Test Async Zinc', function () {
 			var expected = [0, 1];
 
 
-			stack.add(arr).run(function (err) {
+			flow.add(arr).run(function (err) {
 //
 				expect(err).to.be.equal(error);
 				expect(result).to.deep.equal(expected);	
@@ -563,22 +609,22 @@ describe('Test Async Zinc', function () {
 		describe('waterfall', function () {
 
 			it('should pass multiple arguments to the final-callback', function (done) {
-				var stack = zinc
+				var flow = zinc
 					.create()
 					.waterfall();
 
 				var results = [];
 				
-				stack.push(function (h) {
+				flow.push(function (h) {
 					return h(null, 'one-one', 'one-two');
 				});
 
-				stack.push(function (argOne, argTwo, h) {
+				flow.push(function (argOne, argTwo, h) {
 					results.push([ argOne, argTwo ]);
 					return h(null, 'two-one', 'two-two');
 				});
 
-				stack.run(function (err, result) {
+				flow.run(function (err, result) {
 					// result is now ['two-one', 'two-two']
 					results.push(result);
 
@@ -594,19 +640,19 @@ describe('Test Async Zinc', function () {
 			});
 
 			it('should pass one argument to the final-callback', function (done) {
-				var stack = zinc
+				var flow = zinc
 					.create()
 					.waterfall();
 
-				stack.push(function (h) {
+				flow.push(function (h) {
 					return h();
 				});
 
-				stack.push(function (h) {
+				flow.push(function (h) {
 					return h(null, 'two-one');
 				});
 
-				stack.run(function (err, result) {
+				flow.run(function (err, result) {
 					// result is now 'two-one'
 					
 					expect(err).to.be.not.ok;
@@ -616,7 +662,7 @@ describe('Test Async Zinc', function () {
 				});
 			});
 
-			it('should be chained into another stack as waterfall and have one argument', function (done) {
+			it('should be chained into another flow as waterfall and have one argument', function (done) {
 				var parent = zinc.create();
 
 				var child = zinc
@@ -648,7 +694,7 @@ describe('Test Async Zinc', function () {
 				});
 			});
 
-			it('should be chained into another stack as waterfall and have multiple arguments', function (done) {
+			it('should be chained into another flow as waterfall and have multiple arguments', function (done) {
 				var parent = zinc.create();
 
 				var child = zinc
@@ -676,8 +722,8 @@ describe('Test Async Zinc', function () {
 			});
 		});
 		
-		it('should not show error with maximum stack size when doing synced', function (done) {
-			var stack = zinc.create();
+		it('should not show error with maximum flow size when doing synced', function (done) {
+			var flow = zinc.create();
 
 			var arr = [];
 
@@ -689,7 +735,7 @@ describe('Test Async Zinc', function () {
 				})();
 			}
 
-			stack.add(arr).run(function (err) {
+			flow.add(arr).run(function (err) {
 //			async.series(arr, function () {
 				return done();
 			});
@@ -697,7 +743,7 @@ describe('Test Async Zinc', function () {
 
 		it('should run synced code', function (done) {
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var arr = [];
 			var result = [];
@@ -714,7 +760,7 @@ describe('Test Async Zinc', function () {
 				})();
 			}
 
-			stack.add(arr).run(function (err) {
+			flow.add(arr).run(function (err) {
 				expect(result).to.deep.equal(expected);	
 				return done();
 			});
@@ -722,7 +768,7 @@ describe('Test Async Zinc', function () {
 
 		it('should collect results with one argument', function (done) {
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var arr = [];
 			var expected = [];
@@ -738,7 +784,7 @@ describe('Test Async Zinc', function () {
 				})();
 			}
 
-			stack.add(arr).run(function (err, result) {
+			flow.add(arr).run(function (err, result) {
 //
 				expect(err).to.be.not.ok;
 				expect(result).to.deep.equal(expected);	
@@ -748,7 +794,7 @@ describe('Test Async Zinc', function () {
 
 		it('should collect results with multiple arguments', function (done) {
 
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var arr = [];
 			var expected = [];
@@ -764,7 +810,7 @@ describe('Test Async Zinc', function () {
 				})();
 			}
 
-			stack.add(arr).run(function (err, result) {
+			flow.add(arr).run(function (err, result) {
 //
 				expect(err).to.be.not.ok;
 				expect(result).to.deep.equal(expected);	
@@ -773,7 +819,7 @@ describe('Test Async Zinc', function () {
 		});
 
 		it('should stop execute when error is passed', function (done){
-			var stack = zinc.create();
+			var flow = zinc.create();
 
 			var result = [];
 			var error = new Error();
@@ -796,7 +842,7 @@ describe('Test Async Zinc', function () {
 
 			var expected = [0, 1];
 
-			stack.add(arr).run(function (err) {
+			flow.add(arr).run(function (err) {
 //
 				expect(err).to.be.equal(error);
 				expect(result).to.deep.equal(expected);	
@@ -805,7 +851,7 @@ describe('Test Async Zinc', function () {
 		});
 
 		it('should stop executing when item has error', function (done) {
-			var stack = zinc.create();
+			var flow = zinc.create();
 			var result = [];
 			var arr = [
 				function (h) {
@@ -826,7 +872,7 @@ describe('Test Async Zinc', function () {
 
 			var expected = [0];
 
-			stack.add(arr).run(function (err) {
+			flow.add(arr).run(function (err) {
 //
 				expect(err.message).to.contain('result1');
 				expect(result).to.deep.equal(expected);	
@@ -838,17 +884,17 @@ describe('Test Async Zinc', function () {
 
 			var obj = {};
 
-			var stack = zinc.create();
-			stack.context(obj);
+			var flow = zinc.create();
+			flow.context(obj);
 
-			stack.add(function (h) {
+			flow.add(function (h) {
 				setTimeout(function () {
 					return h();
 				}, 0);
 			});
 
 			
-			stack.run(function () {
+			flow.run(function () {
 				expect(this).to.equal(obj);
 				return done();
 			});
@@ -858,16 +904,16 @@ describe('Test Async Zinc', function () {
 
 			var obj = {};
 
-			var stack = zinc.create();
-			stack.context(obj);
+			var flow = zinc.create();
+			flow.context(obj);
 
-			stack.add(function (h) {
+			flow.add(function (h) {
 				setTimeout(function () {
 					return h(new Error());
 				}, 0);
 			});
 			
-			stack.run(function () {
+			flow.run(function () {
 				expect(this).to.equal(obj);
 				return done();
 			});
