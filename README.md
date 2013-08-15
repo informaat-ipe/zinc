@@ -46,6 +46,9 @@ var flow = zinc
 There are couple of different possibilities to add functions to the zinc-flow,
 but all of them use public method `add`.
 
+
+#### Function
+
 First of all you can pass function directly to the zinc-flow.
 
 ```javascript
@@ -56,6 +59,8 @@ flow.push(function (next) {
 
 flow.run();
 ```
+
+#### Array
 
 It's also possible to pass an array of functions.
 
@@ -76,19 +81,7 @@ flow.add([
 flow.run();
 ```
 
-Or even pass the object and method name to it
-
-```javascript
-var flow = zinc.create();
-
-flow.add(this, 'methodOne');
-flow.add(this, 'methodTwo');
-flow.add(this, 'methodThree');
-
-flow.run();
-```
-
-### Nesting
+#### Zinc-flow
 
 It's possible to nest zinc flows one in another in order to create more
 complex control-flows:

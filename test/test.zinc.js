@@ -63,30 +63,6 @@ describe('Test Async Zinc', function () {
 			});
 		});
 
-
-		it('should add object and method name', function (done) {
-
-			var flow = zinc.create();
-			var r = [];
-
-			var obj = {
-				one: function (h) { r.push('one'); return h(); },
-				two: function (h) { r.push('two'); return h(); },
-				three: function (h) { r.push('three'); return h(); },
-				doit: function () {
-
-					flow.add(this, 'one');
-					flow.add(this, 'two');
-					flow.add(this, 'three');
-
-					flow.run(done);
-				}
-			};
-
-			obj.doit();
-
-		});
-
 		it('should run without functions', function (done) {
 			var flow = zinc.create();
 
