@@ -221,7 +221,6 @@ In case context is not set, zinc will create empty isolated context for every
 flow. Which means, that even if you will use `this` in a flow it wont leak to
 the global and can be used as storage of variables. Let's check the example:
 
-
 ```javascript
 var runMe = function () {
 
@@ -246,6 +245,13 @@ var runMe = function () {
 };
 ```
 
+### Verbosity
 
+To make debugging easier, zinc can log stuff which goes wrong to the standard
+console object. By default this behaviour is turned off, but you can enable it
+by using verbose method.
 
+```javascript
+  zinc.verbose(true);
+```
 
