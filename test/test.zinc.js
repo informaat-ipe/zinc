@@ -7,6 +7,43 @@ var expect = chai.expect;
 describe('Test Async Zinc', function () {
 	
 	describe('global', function () {
+		it('shuld break if function is not array, flow or function', function () {
+			var flow = zinc.create();
+
+			expect(function () {
+				flow.add(null);
+			}).throws();
+
+			expect(function () {
+				flow.add(123);
+			}).throws();
+
+			expect(function () {
+				flow.add('23424');
+			}).throws();
+
+			expect(function () {
+				flow.add(true);
+			}).throws();
+
+			expect(function () {
+				flow.add({});
+			}).throws();
+
+			expect(function () {
+				flow.add(function () {});
+			}).not.to.throws();
+
+			expect(function () {
+				flow.add([function () {}]);
+			}).not.to.throws();
+
+			expect(function () {
+				flow.add(zinc.create());
+			}).not.to.throws();
+
+		});
+
 		it('should pass array as one argument in waterfall', function (done) {
 
 			var flow = zinc.create().waterfall();
