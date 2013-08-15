@@ -1,12 +1,13 @@
 /*jshint indent:4, node:true, strict:false*/
-/*global describe:true, expect:true, it:true */
+/*global describe:true, expect:true, it:true, zinc:true */
 
 // var zinc = require('../lib/zinc');
 var expect = chai.expect;
 
 describe('Test Async Zinc', function () {
-	
+
 	describe('global', function () {
+
 		it('shuld break if function is not array, flow or function', function () {
 			var flow = zinc.create();
 
@@ -233,16 +234,19 @@ describe('Test Async Zinc', function () {
 
 		it('should give error when adding while running');
 
-		it('should not execute multiple handlers', function (done) {
+		it('should throw when executing multiple handlers', function (done) {
 			var flow = zinc.create();
 
 			var obj = {};
 
 			flow.add(function (h) {
-				h();
 				setTimeout(function () {
-					return h();
+					expect(function () {
+						return h();
+					}).throws();
 				}, 0);
+
+				return h();
 			});
 			
 			flow.run(function () {
