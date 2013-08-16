@@ -92,7 +92,7 @@ describe('Test Async Zinc', function () {
 			});
 
 			flow.run(function (err, result) {
-
+				expect(err).to.be.not.ok;
 				expect(result).to.deep.equal([[{
 					name: 'zinc'
 				}]]);
@@ -358,6 +358,7 @@ describe('Test Async Zinc', function () {
 					.waterfall();
 
 				var results = [];
+
 				
 				flow.push(function (h) {
 					setTimeout(function () {
