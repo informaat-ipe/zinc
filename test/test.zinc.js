@@ -181,7 +181,7 @@ describe('Test Async Zinc', function () {
 
 		});
 
-		describe('series', function () {
+		describe.only('series', function () {
 
 			it('should pass array as one argument to the final-callback', function (done) {
 				var flow = zinc.create();
@@ -335,11 +335,49 @@ describe('Test Async Zinc', function () {
 
 	});
 
+	describe('map', function () {
+		it('should work', function (done) {
+
+			var flow = zinc.create();
+
+			flow.add(function (next) {
+				return next(null, 'before');
+			});
+
+			flow.map(['zork', 'bork', 'fnord'], function (key, value, next) {
+				// key might be an index or the key
+				return next(null, key + '_' + value);
+			});
+			
+			flow.add(function (next) {
+				return next(null, 'after');
+			});
+
+			flow.run(function (err, result) {
+
+				expect(err).to.not.be.ok;
+
+				expect(result).to.deep.equal([
+					'before',
+					[ '0_zork', '1_bork', '2_fnord' ],
+					'after'
+				]);
+				// result will be
+				// [
+				//	'hello',
+				//	['zork', 'bork', 'fnord']
+				//	'after'
+				// ]
+				return done();
+			});
+		});
+	});
+
 	describe('chaining', function () {
 		//
 		// waterfall ( waterfall )
 		//
-		it.only('waterfall.add(waterfall) more arguments', function (done) {
+		it('waterfall.add(waterfall) more arguments', function (done) {
 
 			var parent = zinc.create().waterfall();
 
@@ -384,7 +422,6 @@ describe('Test Async Zinc', function () {
 			});
 		});
 
-return;
 		it('waterfall.add(waterfall)', function (done) {
 
 			var parent = zinc.create().waterfall();
