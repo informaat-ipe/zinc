@@ -336,8 +336,160 @@ describe('Test Async Zinc', function () {
 	});
 
 	describe('chaining', function () {
-		it('should use runner as a parameter for add', function (done) {
+		//
+		// waterfall ( waterfall )
+		//
+		it.only('waterfall.add(waterfall) more arguments', function (done) {
 
+			var parent = zinc.create().waterfall();
+
+			var result = [];
+
+			parent.add(function (next) {
+				// this one, will be dropped
+				// since there is no passing to the child
+				return next(null, 'parent-one');
+			});
+
+			parent.add(
+				zinc.create()
+				.waterfall()
+				.add(function (parentOne, next) {
+					console.log('first child which will have input from the previous thing', parentOne);
+					return next(null, 'child-one');
+				})
+				.add(function (childOne, next) {
+					return next(null, 'child-two', 'child-two-two');
+				})
+			);
+
+			parent.add(function (childResult, next) {
+				console.log('fnordy', childResult);
+				// wont unpack, since it's a sub flow
+				result.push(childResult);
+				return next(null, 'parent-two');
+			});
+
+			parent.run(function (err, r) {
+				expect(err).to.be.not.ok;
+
+				result.push(r);
+
+				expect(result).to.deep.equal([
+					[ 'child-two', 'child-two-two'],
+					'parent-two'
+				]);
+
+				return done();
+			});
+		});
+
+return;
+		it('waterfall.add(waterfall)', function (done) {
+
+			var parent = zinc.create().waterfall();
+
+			var result = [];
+
+			parent.add(function (next) {
+				// this one, will be dropped
+				// since there is no passing to the child
+				return next(null, 'parent-one');
+			});
+
+			parent.add(
+				zinc.create()
+				.waterfall()
+				.add(function (next) {
+					return next(null, 'child-one');
+				})
+				.add(function (childOne, next) {
+					return next(null, 'child-two');
+				})
+			);
+
+			parent.add(function (childResult, next) {
+				// wont unpack, since it's a sub flow
+				result.push(childResult);
+				return next(null, 'parent-two');
+			});
+
+			parent.run(function (err, r) {
+				expect(err).to.be.not.ok;
+
+				result.push(r);
+
+				expect(result).to.deep.equal([
+					[ 'child-two'],
+					'parent-one'
+				]);
+
+				return done();
+			});
+		});
+		return;
+
+		//
+		// waterfall ( series )
+		//
+		it('waterfall.add(series)', function (done) {
+		});
+
+		//
+		// series ( waterfall )
+		//
+		it('series.add(waterfall)', function (done) {
+		});
+		
+		//
+		// series ( series )
+		//
+		it('series.add(series)', function (done) {
+		});
+
+		return;
+		it('simple version', function (done) {
+
+			var child = zinc.create();
+
+			child.add(function (h) {
+				r.push('child0');
+				return h(null, 'child0');
+			});
+
+			child.add(function (h) {
+				r.push('child1');
+				return h(null, 'child1');
+			});
+
+			var r = [];
+
+
+			var flow = zinc.create();
+
+			flow.add(function (h) {
+				r.push('parent0');
+				return h(null, 'parent0');
+			});
+
+			flow.add(child);
+
+			flow.add(function (h) {
+				r.push('parent1');
+				return h(null, 'parent1');
+			});
+
+			flow.run(function (err, result) {
+				expect(err).to.be.not.ok;
+
+				expect(r).to.be.deep.equal([ 'parent0', 'child0', 'child1', 'parent1' ]);
+				expect(result).to.be.deep.equal([ 'parent0', [ 'child0', 'child1' ], 'parent1' ]);
+
+				return done();
+			});
+		});
+
+		it('shdould use do the same, but with one argument', function (done) {
 			var innerChild = zinc.create();
 
 			innerChild.add(function (next) {
@@ -376,6 +528,61 @@ describe('Test Async Zinc', function () {
 			});
 
 			flow.run(function (err, result) {
+				console.log('FFFFFF', result);
+				expect(err).to.be.not.ok;
+
+				expect(r).to.be.deep.equal([ 'parent0', 'child0', 'child1', 'parent1' ]);
+				expect(result).to.be.deep.equal([ 'parent0', [ 'child0', 'child1' ], 'parent1' ]);
+
+				return done();
+			});
+		});
+
+		it('should use runner as a parameter for add', function (done) {
+
+			var innerChild = zinc.create();
+
+			innerChild.add(function (next) {
+				return next(null, 'innerChild0');
+			});
+
+			innerChild.add(function (next) {
+				return next(null, 'innerChild1');
+			});
+
+			var child = zinc.create();
+
+			child.add(function (h) {
+				r.push('child0');
+				return h(null, 'child0');
+			});
+
+			child.add(innerChild);
+
+			child.add(function (h) {
+				r.push('child1');
+				return h(null, 'child1');
+			});
+
+			var r = [];
+
+
+			var flow = zinc.create();
+
+			flow.add(function (h) {
+				r.push('parent0');
+				return h(null, 'parent0');
+			});
+
+			flow.add(child);
+
+			flow.add(function (h) {
+				r.push('parent1');
+				return h(null, 'parent1');
+			});
+
+			flow.run(function (err, result) {
+				console.log('FFFFFF', result);
 				expect(err).to.be.not.ok;
 
 				expect(r).to.be.deep.equal([ 'parent0', 'child0', 'child1', 'parent1' ]);
